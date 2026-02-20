@@ -10,8 +10,8 @@ A CLI chatbot powered by the [Claude Agent SDK](https://platform.claude.com/docs
 git clone https://github.com/austinbrownapfm/philsey-agent.git
 cd philsey-agent
 npm install
-echo "ANTHROPIC_API_KEY=your-key-here" > .env
-npx tsx src/index.ts
+echo "ANTHROPIC_API_KEY=your-key-here" > .env # should be there already if you have Claude installed/logged in!
+npm start
 ```
 
 That's it. You're talking to Philsey. Go Dawgs.

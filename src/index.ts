@@ -36,6 +36,39 @@ function prompt(): Promise<string> {
   });
 }
 
+const THINKING_MESSAGES = [
+  "Philsey is thinking...",
+  "Consulting the dawg logs...",
+  "Vibe coding a response...",
+  "Channeling the Goose...",
+  "Barking up the right tree...",
+  "Running it through the dawg filter...",
+  "Midnight refactoring thoughts...",
+  "Checking between the hedges...",
+  "Loading dawg wisdom...",
+  "Tuning into the jam...",
+  "Sniffing out the answer...",
+  "Brewing up some dawg sauce...",
+  "Asking the UGA elders...",
+  "Deep in the vibe zone...",
+  "Fetching big dawg energy...",
+];
+
+function startSpinner(): () => void {
+  const frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+  const message = THINKING_MESSAGES[Math.floor(Math.random() * THINKING_MESSAGES.length)];
+  let i = 0;
+  process.stdout.write(`\x1b[33m${frames[0]} ${message}\x1b[0m`);
+  const timer = setInterval(() => {
+    i = (i + 1) % frames.length;
+    process.stdout.write(`\r\x1b[33m${frames[i]} ${message}\x1b[0m`);
+  }, 80);
+  return () => {
+    clearInterval(timer);
+    process.stdout.write("\r\x1b[K");
+  };
+}
+
 function extractText(message: SDKMessage): string | null {
   if (message.type === "assistant") {
     const textBlocks = (message.message as any).content?.filter(
@@ -85,27 +118,33 @@ async function chat(userMessage: string, sessionId?: string): Promise<string | u
   let capturedSessionId: string | undefined;
   let fullResponse = "";
 
-  const response = query({
-    prompt: generateMessages(),
-    options,
-  });
+  const stopSpinner = startSpinner();
 
-  for await (const message of response) {
-    if (message.type === "system" && (message as any).subtype === "init") {
-      capturedSessionId = message.session_id;
-    }
+  try {
+    const response = query({
+      prompt: generateMessages(),
+      options,
+    });
 
-    const text = extractText(message);
-    if (text && message.type === "assistant") {
-      fullResponse = text;
-    }
+    for await (const message of response) {
+      if (message.type === "system" && (message as any).subtype === "init") {
+        capturedSessionId = message.session_id;
+      }
 
-    if (message.type === "result") {
-      const result = message as any;
-      if (result.subtype === "success" && result.result) {
-        fullResponse = result.result;
+      const text = extractText(message);
+      if (text && message.type === "assistant") {
+        fullResponse = text;
+      }
+
+      if (message.type === "result") {
+        const result = message as any;
+        if (result.subtype === "success" && result.result) {
+          fullResponse = result.result;
+        }
       }
     }
+  } finally {
+    stopSpinner();
   }
 
   if (fullResponse) {
